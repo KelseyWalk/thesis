@@ -1,2 +1,3 @@
 # thesis
 all code related to master's thesis. 
+IEQ data, energy data, participant map,...
