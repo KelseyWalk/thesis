@@ -181,6 +181,7 @@ outputs_stats <- group_by(outputs, id_home) %>%
 
 #### Time Series Plots
 ```{r}
+updated 1/2/22
 
 p1 <- ggplot(data = filter(outputs, id_home == "001"), aes(datetime, Qf_cfm)) + geom_line() +
  ggtitle("House 001") + 
