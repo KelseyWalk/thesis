@@ -41,12 +41,11 @@ g <- 9.81 #gravity (m/s2)
 p_air <- 1.225 #outdoor density of air (kg/m3). 1.225 is for sea level at 15deg C. In FoCo, should be higher (due to lower humidity and altitude)  ?????????????????
 ```
 
-
 # Read in data
 
 #### House Assessment Data
 ```{r include = FALSE}
-assessment <- read_excel("~kelseywalker/Desktop/EPIC HOMES/house_characteristics_assessment/h_charact.xlsx", sheet = "LBL Model_ela_new") 
+assessment <- read_excel("~kelseywalker/Desktop/EPIC HOMES/R_thesis/LBL Model Input Data/house_assessment.xlsx", sheet = "LBL_model_r") 
   
 # Define ela [m^2] and h_h [m]
 ## Assume each floor = 9ft, so height = 9*floor* 0.3048 m
@@ -59,7 +58,7 @@ assessment <- mutate(assessment, height = floors * 9*0.3048) %>%
 #### Wind Data (Hourly)
 ```{r include = FALSE}
 # Hourly Wind Data
-wind_data <- read_excel("~kelseywalker/Desktop/EPIC HOMES/infiltration/wind_speed/FCLA_wind.xlsx", sheet = "wind_r", skip = 3)
+wind_data <- read_excel("~kelseywalker/Desktop/EPIC HOMES/R_thesis/LBL Model Input Data/FCLA_wind_data.xlsx", sheet = "wind_r", skip = 3)
 
 #Remove wind_dir from dataset
 wind_data <- select(wind_data, !c("Wind Dir (Deg)")) %>%
@@ -80,7 +79,7 @@ wind_data <- select(wind_data, !c("Wind Dir (Deg)")) %>%
 
 ```
 
-###### append wind data for each home
+###### Append wind data for each home
 ```{r, include = FALSE}
 #append process
 wind_long <- (rbind(wind_data, mutate(wind_data, id_home = '002') )) %>%
@@ -123,7 +122,7 @@ wind_all <- merge(wind_long, assessment, by = "id_home") %>%
 ```{r include = FALSE}
 # Temperature Data 
 
-temp_all <- readRDS("~kelseywalker/Desktop/EPIC HOMES/Fall-2021/omni_1hour.rds") %>%
+temp_all <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/LBL Model Input Data/omni_1hour.rds") %>%
   filter(location == 'living' | location == 'outdoor') %>% 
   select(id_home, datetime, location, temp) %>%
   mutate(temp = temp + 273.15 ) %>% # Convert to Kelvin
