@@ -183,82 +183,110 @@ outputs_stats <- group_by(outputs, id_home) %>%
 ```{r}
 
 p1 <- ggplot(data = filter(outputs, id_home == "001"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 001") 
+ ggtitle("House 001") + 
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
+  
   
 p2 <- ggplot(data = filter(outputs, id_home == "002"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 002") 
+ ggtitle("House 002")  +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p3 <- ggplot(data = filter(outputs, id_home == "003"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 003") 
+ ggtitle("House 003") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p5 <- ggplot(data = filter(outputs, id_home == "005"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 005") 
+ ggtitle("House 005") +
+  scale_x_datetime(date_breaks = "1 week", date_labels = "%b-%d \n %y") 
 
 p6 <- ggplot(data = filter(outputs, id_home == "006"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 006")  
+ ggtitle("House 006")  +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p7 <- ggplot(data = filter(outputs, id_home == "007"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 007") 
+ ggtitle("House 007") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p10 <- ggplot(data = filter(outputs, id_home == "010"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 010") 
+ ggtitle("House 010") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p11 <- ggplot(data = filter(outputs, id_home == "011"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 011") 
+ ggtitle("House 011") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p12 <- ggplot(data = filter(outputs, id_home == "012"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 012") 
+ ggtitle("House 012") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p14 <- ggplot(data = filter(outputs, id_home == "014"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 014") 
+ ggtitle("House 014") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p15 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 015") 
+ ggtitle("House 015") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p16 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 016") 
+ ggtitle("House 016") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p17 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 017") 
+ ggtitle("House 017") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p18 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 018") 
+ ggtitle("House 018") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p19 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 019") 
+ ggtitle("House 019") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p20 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 020") 
+ ggtitle("House 020") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p22 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 022") 
+ ggtitle("House 022") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p23 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 023") 
+ ggtitle("House 023") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p25 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 025") 
+ ggtitle("House 025") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p26 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 026") 
+ ggtitle("House 026") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p27 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 027") 
+ ggtitle("House 027") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 p28 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
- ggtitle("House 028") 
+ ggtitle("House 028") +
+  scale_x_datetime(date_breaks = "2 month", date_labels = "%b \n %y") 
 
 
 
-p_houses_1 <- grid.arrange(p1, p2, p3, p5, p6, p7, p10, p11, p12, p14, p15, p16, nrow = 3) #round 1
+p_houses_1a <- grid.arrange(p1, p2, p3, p5, p6, p7, nrow = 2) #round 1a
+p_houses_1b <- grid.arrange(p10, p11, p12, p14, p15, p16, nrow = 2) #round 1b 
 
-p_houses_2 <- grid.arrange(p17, p18, p19, p20, p22, p23, p25, p26, p27, p28, nrow = 3) #round 2
+p_houses_2a <- grid.arrange(p17, p18, p19, p20, p22, p23, nrow = 2) #round 2a
+p_houses_2b <- grid.arrange(p25, p26, p27, p28, nrow = 2) #round 2b
 ```
 
 
 ```{r, include = FALSE}
 ###### Save above Time Series Plots (pdf)
-ggsave(filename = "lbl_individual_houses_line.pdf", plot = p_houses_1)
+ggsave(filename = "lbl_houses_round_1a.pdf", plot = p_houses_1a)
+ggsave(filename = "lbl_houses_round_1b.pdf", plot = p_houses_1b)
+ggsave(filename = "lbl_houses_round_2a.pdf", plot = p_houses_2a)
+ggsave(filename = "lbl_houses_round_2b.pdf", plot = p_houses_2b)
 ```
 
 #### Contributing Qs and Qw to Qf
@@ -307,7 +335,10 @@ geom_violin(width = 1) +
   geom_boxplot(width = 0.1, color = "grey", alpha = 0.2) +
   ggtitle("House violin plots") +
   labs(x = "House ID") +
-  labs(y = "Qf (cfm)")
+  labs(y = "Qf (cfm)") +
+  theme(axis.text.x = element_text(angle = 90, hjust =1))
+
+b_houses
 ```
 
 ###### Standard Boxplot
