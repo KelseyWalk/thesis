@@ -1,0 +1,324 @@
+---
+title: "Qf_LBL_Model"
+author: "Kelsey Walker"
+date: "1/1/2022"
+output: html_document
+---
+
+---
+title: "LBL_Model"
+author: "Kelsey Walker"
+date: "10/28/2021"
+output: html_document
+---
+# Packages
+```{r include = FALSE}
+library("dplyr")
+library("tidyverse")
+library("readxl")
+library("ggplot2")
+library("lubridate")
+library("gridExtra")
+library("scales")
+```
+
+# Set Constant Parameters
+
+#### Assumed or given values
+```{r}
+R <- 0.5 # even leakage btw floor and ceiling
+X <- 0 # leakage distriubtion parameter
+
+C <- 0.102 #sheilding coefficient class 5 
+
+gamma_h <- 0.35 #house terrain class 5
+alpha_h <- 0.47 #house terrain class 5
+gamma_a <- 0.15 #airport terrain class 2
+alpha_a <- 1.00 #airport terrain class 2
+
+h_a <- 20*0.3048 #height of (KFNL) airport wind tower [m]
+g <- 9.81 #gravity (m/s2)
+p_air <- 1.225 #outdoor density of air (kg/m3). 1.225 is for sea level at 15deg C. In FoCo, should be higher (due to lower humidity and altitude)  ?????????????????
+```
+
+# Read in data
+
+#### House Assessment Data
+```{r include = FALSE}
+assessment <- read_excel("~kelseywalker/Desktop/EPIC HOMES/R_thesis/LBL Model Input Data/house_assessment.xlsx", sheet = "LBL_model_r") 
+  
+# Define ela [m^2] and h_h [m]
+## Assume each floor = 9ft, so height = 9*floor* 0.3048 m
+assessment <- mutate(assessment, height = floors * 9*0.3048) %>%
+  #mutate(ela = ela * 1/1550) %>% # 1m^2 = 1550 in^2. ela[in^2]/1550=ela[m^2]
+  drop_na(ela, floors) %>% #filter to only homes with both ela and floor data
+  rename(id_home = home)
+```
+
+#### Wind Data (Hourly)
+```{r include = FALSE}
+# Hourly Wind Data
+wind_data <- read_excel("~kelseywalker/Desktop/EPIC HOMES/R_thesis/LBL Model Input Data/FCLA_wind_data.xlsx", sheet = "wind_r", skip = 3)
+
+#Remove wind_dir from dataset
+wind_data <- select(wind_data, !c("Wind Dir (Deg)")) %>%
+
+#Round time to hour and define wind speed
+  mutate(
+    datetime = ymd_hms(wind_data$datetime),
+    datetime = round_date(datetime, 'hour') ) %>%
+    rename(wind_va = 'Wind Speed (MPH)') %>%
+    mutate(wind_va = wind_va * 0.44704) %>% #wind speed, [m/s]
+    drop_na(wind_va) 
+    
+# Remove duplicate datetime (keep last)
+ wind_data <- wind_data[!duplicated(wind_data$datetime),fromLast = TRUE] 
+ 
+#ready for append process
+ wind_data <- mutate(wind_data, id_home = '001')
+
+```
+
+###### Append wind data for each home
+```{r, include = FALSE}
+#append process
+wind_long <- (rbind(wind_data, mutate(wind_data, id_home = '002') )) %>%
+  rbind(wind_data, mutate(wind_data, id_home = '003') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '005') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '006') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '007') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '010') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '011') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '012') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '013') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '014') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '015') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '016') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '017') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '018') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '019') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '020') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '022') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '023') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '025') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '026') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '027') )%>%
+  rbind(wind_data, mutate(wind_data, id_home = '028') )%>%
+  relocate(id_home, .before = datetime)
+  
+```
+
+###### Combine Assessment data and Wind Data
+```{r}
+wind_all <- merge(wind_long, assessment, by = "id_home") %>%
+  select(!c(round, floors)) %>%
+  mutate(wind_vh = wind_va *( (alpha_h*(height/10)^(gamma_h)) / (alpha_a *(h_a / 10)^gamma_a) ) ) %>%
+  relocate(ela, .after = wind_vh)
+  
+```
+
+
+#### Temperature Data (Hourly)
+```{r include = FALSE}
+# Temperature Data 
+
+temp_all <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/LBL Model Input Data/omni_1hour.rds") %>%
+  filter(location == 'living' | location == 'outdoor') %>% 
+  select(id_home, datetime, location, temp) %>%
+  mutate(temp = temp + 273.15 ) %>% # Convert to Kelvin
+  filter(temp < 323.15) #filter: Keep only T< 50 C (122F)
+
+## Reshape temp_all from long to wide
+temp_wide <- pivot_wider(data = temp_all,
+                         names_from = location,
+                         values_from = temp)
+temp_wide <- drop_na(temp_wide)
+                      
+```
+
+#### Combine temp and windspeed using datetime and id_house as unique keys 
+```{r include = FALSE}
+inputs <- inner_join(wind_all, temp_wide, by = c('id_home', 'datetime'))%>%
+  mutate(delta_t = living - outdoor) 
+
+```
+
+
+# LBL Model
+
+#### Stack Effect
+```{r}
+outputs <- mutate(inputs, Qs = ela / 3 * sqrt(g*height * abs(delta_t)/living) * (1+R/2) * 1)  # [m^3/s} #last term = 1 = (1-X^2/(2-R)^2)^(3/2)
+```
+
+#### Wind Effect (Modified LBL Model)
+```{r}
+outputs <- mutate(outputs, Qw = ela * wind_vh * (1-R)^(0.8) * C) # [m^3/s]
+```
+
+#### Combined Stack and Wind
+```{r}
+outputs <- mutate(outputs, Qf_m3s = sqrt( Qs^2 + Qw^2)) %>% # [m^3/s] 
+  mutate(Qf_cfm = Qf_m3s * 2118.88) #[ft^3/min]
+```
+
+#### WRite Output to csv 
+```{r}
+write_csv(outputs, "lbl_model_ela_new.csv")
+```
+
+# Graphs
+
+## Stats
+```{r}
+outputs_stats <- group_by(outputs, id_home) %>%
+  summarise(median_cfm = median(Qf_cfm), sd(Qf_cfm), n = n())
+          
+```
+
+
+## Individual House Graphs
+
+#### Time Series Plots
+```{r}
+
+p1 <- ggplot(data = filter(outputs, id_home == "001"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 001") 
+  
+p2 <- ggplot(data = filter(outputs, id_home == "002"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 002") 
+
+p3 <- ggplot(data = filter(outputs, id_home == "003"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 003") 
+
+p5 <- ggplot(data = filter(outputs, id_home == "005"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 005") 
+
+p6 <- ggplot(data = filter(outputs, id_home == "006"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 006")  
+
+p7 <- ggplot(data = filter(outputs, id_home == "007"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 007") 
+
+p10 <- ggplot(data = filter(outputs, id_home == "010"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 010") 
+
+p11 <- ggplot(data = filter(outputs, id_home == "011"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 011") 
+
+p12 <- ggplot(data = filter(outputs, id_home == "012"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 012") 
+
+p14 <- ggplot(data = filter(outputs, id_home == "014"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 014") 
+
+p15 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 015") 
+
+p16 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 016") 
+
+p17 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 017") 
+
+p18 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 018") 
+
+p19 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 019") 
+
+p20 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 020") 
+
+p22 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 022") 
+
+p23 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 023") 
+
+p25 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 025") 
+
+p26 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 026") 
+
+p27 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 027") 
+
+p28 <- ggplot(data = filter(outputs, id_home == "015"), aes(datetime, Qf_cfm)) + geom_line() +
+ ggtitle("House 028") 
+
+
+
+p_houses_1 <- grid.arrange(p1, p2, p3, p5, p6, p7, p10, p11, p12, p14, p15, p16, nrow = 3) #round 1
+
+p_houses_2 <- grid.arrange(p17, p18, p19, p20, p22, p23, p25, p26, p27, p28, nrow = 3) #round 2
+```
+
+
+```{r, include = FALSE}
+###### Save above Time Series Plots (pdf)
+ggsave(filename = "lbl_individual_houses_line.pdf", plot = p_houses_1)
+```
+
+#### Contributing Qs and Qw to Qf
+```{r}
+#1 3 6 12
+ q1 <- ggplot(data = filter(outputs, id_home == "001"), aes(datetime, Qs, colour = "Qs")) + geom_line() +
+  geom_line(data = filter(outputs, id_home == "001"), aes(datetime, Qw, colour = "Qw")) +
+  geom_line(data = filter(outputs, id_home == "001"), aes(datetime, Qf_m3s, colour = "Qf"), alpha = 0.3) +
+ ggtitle("House 001: sqrt(Qs^2 + Qw^2) = Qf")
+  
+ q3 <- ggplot(data = filter(outputs, id_home == "003"), aes(datetime, Qs, colour = "Qs")) + geom_line() +
+  geom_line(data = filter(outputs, id_home == "003"), aes(datetime, Qw, colour = "Qw")) +
+  geom_line(data = filter(outputs, id_home == "003"), aes(datetime, Qf_m3s, colour = "Qf"), alpha = 0.3) +
+ ggtitle("House 003: sqrt(Qs^2 + Qw^2) = Qf")
+ 
+ q7 <- ggplot(data = filter(outputs, id_home == "007"), aes(datetime, Qs, colour = "Qs")) + geom_line() +
+  geom_line(data = filter(outputs, id_home == "007"), aes(datetime, Qw, colour = "Qw")) +
+  geom_line(data = filter(outputs, id_home == "007"), aes(datetime, Qf_m3s, colour = "Qf"), alpha = 0.3) +
+ ggtitle("House 007: sqrt(Qs^2 + Qw^2) = Qf")
+ 
+ q12 <- ggplot(data = filter(outputs, id_home == "012"), aes(datetime, Qs, colour = "Qs")) + geom_line() +
+  geom_line(data = filter(outputs, id_home == "012"), aes(datetime, Qw, colour = "Qw")) +
+  geom_line(data = filter(outputs, id_home == "012"), aes(datetime, Qf_m3s, colour = "Qf"), alpha = 0.3) +
+ ggtitle("House 012: sqrt(Qs^2 + Qw^2) = Qf")
+
+q_houses <- grid.arrange(q1, q3, q7, q12, nrow = 2)
+```
+```{r, include = FALSE}
+ggsave(filename = "lbl_individual_houses_Qs_Qw.pdf", plot = q_houses)
+```
+
+
+#### Violin Plot
+
+```{r}
+#Sample Size to include on x-axis
+sample_size = outputs %>%
+  group_by(id_home) %>%
+  summarize(num = n())
+
+box_plot <- merge(outputs, sample_size, by = "id_home") %>%
+  mutate(myaxis = paste0(id_home, "\n", "n=", num))
+
+b_houses <- ggplot(data = box_plot, aes(x = myaxis, y = Qf_cfm)) +
+geom_violin(width = 1) +
+  geom_boxplot(width = 0.1, color = "grey", alpha = 0.2) +
+  ggtitle("House violin plots") +
+  labs(x = "House ID") +
+  labs(y = "Qf (cfm)")
+```
+
+###### Standard Boxplot
+```{r}
+ggplot(outputs, aes(x=id_home, y = Qf_cfm)) +
+  geom_boxplot()
+
+```
+
+
+```{r, include = FALSE}
+ggsave(filename = "lbl_box_plot.pdf", plot = b_houses )
+```
+
