@@ -1,0 +1,14 @@
+---
+title: "IAPI_1"
+author: "Kelsey Walker"
+date: "1/15/2022"
+output: html_document
+---
+ready to code
+
+```{r}
+
+sav <- 2+2
+
+
+```
