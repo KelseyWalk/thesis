@@ -4,11 +4,36 @@ author: "Kelsey Walker"
 date: "1/15/2022"
 output: html_document
 ---
-ready to code
 
+```{r include = FALSE}
+library("dplyr")
+library("tidyverse")
+library("readxl")
+library("ggplot2")
+```
+
+# Read in data
+```{r}
+data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/LBL Model Input Data/omni_1hour.rds") %>%
+  filter(location == 'living' | id_home == 001) %>%
+  select(datetime, co2, voc, pm25, humid, temp)
+
+```
+
+# Distributions
 ```{r}
 
-sav <- 2+2
+
+```
+
+# Level-1
+```{r}
+
+
+```
+
+# Level-2
+```{r}
 
 
 ```
