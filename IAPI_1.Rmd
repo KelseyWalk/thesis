@@ -9,31 +9,92 @@ output: html_document
 library("dplyr")
 library("tidyverse")
 library("readxl")
+library("lubridate")
 library("ggplot2")
+
 ```
 
+summarize(mean_p25 = mean(pm25)) %>%
+  summarize(mean_co2 = mean(co2)) %>%
+  summarize(mean_voc = mean(voc)) %>%
+  summarize(mean_temp = mean(temp)) %>%
+  summarize(mean_humid = mean(humid))
 # Read in data
 ```{r}
-data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/LBL Model Input Data/omni_1hour.rds") %>%
+data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>% 
   filter(location == 'living' | id_home == 001) %>%
-  select(datetime, co2, voc, pm25, humid, temp)
+  dplyr::select(datetime, date, co2, voc, pm25, temp, humid) 
 
+ 
+# create daily averages
+data_daily <- data %>%
+  group_by(date) %>%
+  summarize(pm25 = mean(pm25), co2 = mean(co2), voc = mean(voc), temp = mean(temp), humid = mean(humid))
+  
 ```
 
+  
 # Distributions
-```{r}
+From Table 2 (Sofuoglu, 2003)
+-PM25 gamma
+-VOC lognormal
+-CO2?
 
+Results:
+Min, Max, Mean, 5th & 95th percentile
+```{r}
+##???? Should this be each point we have, or the daily average? I think it should be for daily average.
+
+# PM 2.5
+mean_pm25 <- mean(data_daily$pm25)
+var_pm25 <- var(data_daily$pm25)
+min_pm25 <- min(data_daily$pm25)
+max_pm25 <- max(data_daily$pm25)
+dmc_pm25 <- 40 #micrograms/m3?????
+
+# VOC
+mean_voc <- mean(data_daily$voc)
+var_voc <- var(data_daily$voc)
+min_voc <- min(data_daily$voc)
+max_voc <- max(data_daily$voc)
+dmc_voc <- 2000 #micrograms/m3???
+
+# CO2
+mean_co2 <- mean(data_daily$co2)
+var_co2 <- var(data_daily$co2)
+min_co2 <- min(data_daily$co2)
+max_co2 <- max(data_daily$co2)
+dmc_co2 <- 2000 #???
 
 ```
 
 # Level-1
 ```{r}
 
-
+index <- data_daily %>%
+  #PM2.5
+  mutate(pm25_level1 = 10 * (1 - (max_pm25 - pm25) / (max_pm25 - min_pm25) * (dmc_pm25 - pm25)/dmc_pm25)) %>%
+  #VOC
+  mutate(voc_level1 = 10 * (1 - (max_voc - voc) / (max_voc - min_voc) * (dmc_voc - voc)/dmc_voc)) %>%
+  #CO2
+  mutate(co2_level1 = 10 * (1 - (max_co2 - co2) / (max_co2 - min_co2) * (dmc_co2 - co2)/dmc_co2))
 ```
 
-# Level-2
+# Level-2 & Level-3
 ```{r}
+index <- mutate(index, gas_level2 = (co2_level1 + voc_level1) / 2) %>%
+  mutate(particles_level2 = pm25_level1) %>%
+  mutate(IAPI = (gas_level2 + particles_level2) / 2)
+```
 
+# Percentage
+```{r}
+results <- dplyr::select(index, date, pm25_level1, voc_level1, co2_level1, gas_level2, particles_level2, IAPI) %>%
+  mutate(gas_percent = round(gas_level2/(gas_level2 + particles_level2) *100)) %>%
+  mutate(particles_percent = 100-gas_percent) %>%
+  mutate(pm25_percent = particles_percent) %>%
+  mutate(voc_percent = round(voc_level1/(voc_level1 + co2_level1)*gas_percent)) %>%
+  mutate(co2_percent = round(co2_level1/(voc_level1 + co2_level1)*gas_percent))
 
 ```
+
