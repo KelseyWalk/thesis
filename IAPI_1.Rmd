@@ -11,19 +11,16 @@ library("tidyverse")
 library("readxl")
 library("lubridate")
 library("ggplot2")
-
+library("fitdistrplus")
+library("fmsb") #for radar/spider chart
 ```
 
-summarize(mean_p25 = mean(pm25)) %>%
-  summarize(mean_co2 = mean(co2)) %>%
-  summarize(mean_voc = mean(voc)) %>%
-  summarize(mean_temp = mean(temp)) %>%
-  summarize(mean_humid = mean(humid))
 # Read in data
 ```{r}
 data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>% 
   filter(location == 'living' | id_home == 001) %>%
-  dplyr::select(datetime, date, co2, voc, pm25, temp, humid) 
+  dplyr::select(datetime, date, co2, voc, pm25, temp, humid) %>%
+  na.omit(data)
 
  
 # create daily averages
@@ -38,7 +35,52 @@ data_daily <- data %>%
 From Table 2 (Sofuoglu, 2003)
 -PM25 gamma
 -VOC lognormal
--CO2?
+-CO2? lognormal??
+
+### PM2.5 Gamma (FIX ERROR NANs produced! How to extract just quantile value?)
+```{r}
+#plotdist(data_daily$pm25, histo=TRUE, demp = TRUE) #pdf and cdf
+#descdist(data_daily$pm25, boot = 1000) #descritptive stats
+fpm25 <- fitdist(data_daily$pm25, "gamma", method = "mle", lower= c(0,0), start = list(scale = 1, shape = 1))
+denscomp(fpm25)
+cdfcomp(fpm25)
+
+# Solve for min and max using 5th and 95th quantile
+minq_pm25 <- quantile(fpm25, probs = 0.05) #5th quantile
+#min_pm25 <- minq_pm25[[1]]
+maxq_pm25 <- quantile(fpm25, probs = .95) #95th quantile
+#max_pm25 <- maxq_pm25[[1]]
+```
+
+### VOC Lognormal (Gamma looks better for this house???)
+```{r}
+plotdist(data_daily$voc, histo=TRUE, demp = TRUE) #pdf and cdf
+descdist(data_daily$voc, boot = 1000) #descritptive stats
+fvoc <- fitdist(data_daily$voc, "lnorm")
+denscomp(fvoc)
+cdfcomp(fvoc)
+fvoc2 <- fitdist(data_daily$voc, "gamma")
+denscomp(fvoc2)
+cdfcomp(fvoc2) #gamma fits this house's data better!!!
+
+# Quantiles
+minq_voc <- quantile(fvoc, probs = 0.05) #5th quantile
+maxq_voc <- quantile(fvoc, probs = 0.95) #5th quantile
+```
+
+### CO2 Lognormal - looks better than gamma for this house
+```{r}
+plotdist(data_daily$co2, histo=TRUE, demp = TRUE) #pdf and cdf
+descdist(data_daily$co2, boot = 1000) #descritptive stats
+fco2 <- fitdist(data_daily$co2, "lnorm")
+denscomp(fco2)
+cdfcomp(fco2)
+
+# Quantiles
+minq_co2 <- quantile(fco2, probs = 0.05) #5th quantile
+maxq_co2 <- quantile(fco2, probs = 0.95) #5th quantile
+
+```
 
 Results:
 Min, Max, Mean, 5th & 95th percentile
@@ -46,38 +88,85 @@ Min, Max, Mean, 5th & 95th percentile
 ##???? Should this be each point we have, or the daily average? I think it should be for daily average.
 
 # PM 2.5
-mean_pm25 <- mean(data_daily$pm25)
-var_pm25 <- var(data_daily$pm25)
-min_pm25 <- min(data_daily$pm25)
-max_pm25 <- max(data_daily$pm25)
-dmc_pm25 <- 40 #micrograms/m3?????
+dmc_pm25 <- 40 #micrograms/m3????? 
+min_pm25 <- 2.205927 #5th quantile
+max_pm25 <- 16.60172 #95th quantile
 
 # VOC
-mean_voc <- mean(data_daily$voc)
-var_voc <- var(data_daily$voc)
-min_voc <- min(data_daily$voc)
-max_voc <- max(data_daily$voc)
 dmc_voc <- 2000 #micrograms/m3???
+min_voc <- 183.5379 #5th
+max_voc <- 751.6328 #95th
 
 # CO2
-mean_co2 <- mean(data_daily$co2)
-var_co2 <- var(data_daily$co2)
-min_co2 <- min(data_daily$co2)
-max_co2 <- max(data_daily$co2)
 dmc_co2 <- 2000 #???
+min_co2 <- 539.3771
+max_co2 <- 851.7108
 
 ```
 
+#### Create observed location and weight term
+```{r}
+inputs <- data_daily %>%
+  rename(pm25_L = pm25) %>%
+  mutate(pm25_W = pm25_L, .after=pm25_L) %>%
+  rename(voc_L = voc) %>%
+  mutate(voc_W = voc_L, .after=voc_L) %>%
+  rename(co2_L = co2) %>%
+  mutate(co2_W = co2_L, .after=co2_L) %>%
+  dplyr::select(!c(temp, humid))
+
+  
+```
+
+## Meet Conditions for IAPI equation Cobs>Cmin, Cobs<Cmas, Cobs<Cdmc #DISCUSS dmc
+```{r}
+inputs <- inputs %>%
+# PM25
+  #1. If Obs < Min
+  mutate(pm25_L = replace (pm25_L, pm25_L < min_pm25, min_pm25)) %>%
+  mutate(pm25_W = replace (pm25_W, pm25_W < min_pm25, min_pm25)) %>%
+  # 2. If Obs > Max
+  mutate(pm25_L = replace(pm25_L, pm25_L > max_pm25, max_pm25)) %>%
+  mutate(pm25_W = replace(pm25_W, pm25_W > max_pm25, dmc_pm25)) %>%
+  # 3. If Obs > dmc #? What does "but" mean? Why not say "and"?
+  mutate(pm25_L = replace (pm25_L, pm25_L > dmc_pm25, dmc_pm25)) %>%
+  mutate(pm25_W = replace (pm25_W, pm25_W > dmc_pm25, dmc_pm25)) %>%
+
+# VOC
+  #1. If Obs < Min
+  mutate(voc_L = replace (voc_L, voc_L < min_voc, min_voc)) %>%
+  mutate(voc_W = replace (voc_W, voc_W < min_voc, min_voc)) %>%
+  # 2. If Obs > Max
+  mutate(voc_L = replace(voc_L, voc_L > max_voc, max_voc)) %>%
+  mutate(voc_W = replace(voc_W, voc_W > max_voc, dmc_voc)) %>%
+  # 3. If Obs > dmc 
+  mutate(voc_L = replace (voc_L, voc_L > dmc_voc, dmc_voc)) %>%
+  mutate(voc_W = replace (voc_W, voc_W > dmc_voc, dmc_voc)) %>%
+
+# CO2
+  #1. If Obs < Min
+  mutate(co2_L = replace (co2_L, co2_L < min_co2, min_co2)) %>%
+  mutate(co2_W = replace (co2_W, co2_W < min_co2, min_co2)) %>%
+  # 2. If Obs > Max
+  mutate(co2_L = replace(co2_L, co2_L > max_co2, max_co2)) %>%
+  mutate(co2_W  = replace(co2_W, co2_W > max_co2, dmc_co2)) %>%
+  # 3. If Obs > dmc #? What does "but" mean? Why not say "and"?
+  mutate(co2_L = replace (co2_L, co2_L > dmc_co2, dmc_co2)) %>%
+  mutate(co2_W  = replace (co2_W, co2_W > dmc_co2, dmc_co2))
+
+```
+
+
+
 # Level-1
 ```{r}
-
-index <- data_daily %>%
+index <- inputs %>%
   #PM2.5
-  mutate(pm25_level1 = 10 * (1 - (max_pm25 - pm25) / (max_pm25 - min_pm25) * (dmc_pm25 - pm25)/dmc_pm25)) %>%
+  mutate(pm25_level1 = 10 * (1 - (max_pm25 - pm25_L) / (max_pm25 - min_pm25) * (dmc_pm25 - pm25_W)/dmc_pm25)) %>%
   #VOC
-  mutate(voc_level1 = 10 * (1 - (max_voc - voc) / (max_voc - min_voc) * (dmc_voc - voc)/dmc_voc)) %>%
+  mutate(voc_level1 = 10 * (1 - (max_voc - voc_L) / (max_voc - min_voc) * (dmc_voc - voc_W)/dmc_voc)) %>%
   #CO2
-  mutate(co2_level1 = 10 * (1 - (max_co2 - co2) / (max_co2 - min_co2) * (dmc_co2 - co2)/dmc_co2))
+  mutate(co2_level1 = 10 * (1 - (max_co2 - co2_L) / (max_co2 - min_co2) * (dmc_co2 - co2_W)/dmc_co2))
 ```
 
 # Level-2 & Level-3
@@ -95,6 +184,39 @@ results <- dplyr::select(index, date, pm25_level1, voc_level1, co2_level1, gas_l
   mutate(pm25_percent = particles_percent) %>%
   mutate(voc_percent = round(voc_level1/(voc_level1 + co2_level1)*gas_percent)) %>%
   mutate(co2_percent = round(co2_level1/(voc_level1 + co2_level1)*gas_percent))
+```
 
+```{r}
+write_csv(results, "results_IAPI_1_001.csv")
+write_csv(index, "index_IAPI_1_001.csv")
+
+```
+
+
+# Time Series
+```{r}
+p1 <- ggplot(data = results, aes(date, IAPI)) + 
+  geom_line() 
+  #geom_line(aes(date, pm25_level1, color = "green")) + 
+  #geom_line(aes(date, co2_level1, color = "blue")) +
+  #geom_line(aes(date, voc_level1, color = "red"))
+
+ggsave(filename = "IAPI_1_001_line.jpg", plot = p1)
+```
+
+# Radar/Spider Plot
+```{r}
+
+max_min <- data.frame(
+  pm25_level1 = c(10,0), voc_level1 = c(10,0), co2_level1 = c(10,0), gas_level2 = c(10,0), particles_level2 = c(10,0)
+)
+rownames(max_min)<- c("Max", "Min")
+
+data_radar <- results[1,] %>%
+  dplyr::select(pm25_level1, voc_level1, co2_level1, gas_level2, particles_level2) #%>%
+  rbind(max_min, data_radar)
+
+
+radarchart(data_radar)
 ```
 
