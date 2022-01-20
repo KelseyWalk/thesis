@@ -18,13 +18,14 @@ library("fmsb") #for radar/spider chart
 # Read in data
 ```{r}
 data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>% 
-  filter(location == 'living' | id_home == 001) %>%
-  dplyr::select(datetime, date, co2, voc, pm25, temp, humid) %>%
+  filter(id_home == '001', location == 'living') %>%
+  dplyr::select(location, datetime, date, co2, voc, pm25, temp, humid) %>%
   na.omit(data)
 
+#write_csv(data, "omni__001.csv")
  
-# create daily averages
-data_daily <- data %>%
+#create daily averages
+  data_daily <- data %>%
   group_by(date) %>%
   summarize(pm25 = mean(pm25), co2 = mean(co2), voc = mean(voc), temp = mean(temp), humid = mean(humid))
   
@@ -195,13 +196,13 @@ write_csv(index, "index_IAPI_1_001.csv")
 
 # Time Series
 ```{r}
-p1 <- ggplot(data = results, aes(date, IAPI)) + 
-  geom_line() 
-  #geom_line(aes(date, pm25_level1, color = "green")) + 
-  #geom_line(aes(date, co2_level1, color = "blue")) +
-  #geom_line(aes(date, voc_level1, color = "red"))
+ggplot(data = results, aes(date, IAPI)) + 
+  geom_line() +
+  geom_line(aes(date, pm25_percent, color = "pm25")) + 
+  geom_line(aes(date, co2_percent, color = "co2")) +
+  geom_line(aes(date, voc_percent, color = "voc"))
 
-ggsave(filename = "IAPI_1_001_line.jpg", plot = p1)
+#ggsave(filename = "IAPI_1_001_line.jpg", plot = p1)
 ```
 
 # Radar/Spider Plot
