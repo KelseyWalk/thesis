@@ -35,9 +35,11 @@ data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>%
   data_daily <- data %>%
   group_by(id_home, date) %>%
   summarise(pm25 = mean(pm25), co2 = mean(co2), voc = mean(voc), temp = mean(temp), humid = mean(humid))
-    
   
+# clean up data
+ #house 001 - first row outlier needs to be removed
 ```
+
 
   
 # Distributions
@@ -59,6 +61,7 @@ minq_pm25 <- quantile(fpm25, probs = 0.05) #5th quantile
 #min_pm25 <- minq_pm25[[1]]
 maxq_pm25 <- quantile(fpm25, probs = .95) #95th quantile
 #max_pm25 <- maxq_pm25[[1]]
+
 ```
 
 ### VOC Lognormal (Gamma looks better for this house???)
@@ -75,7 +78,9 @@ cdfcomp(fvoc2) #gamma fits this house's data better!!!
 # Quantiles
 minq_voc <- quantile(fvoc, probs = 0.05) #5th quantile
 maxq_voc <- quantile(fvoc, probs = 0.95) #5th quantile
+
 ```
+
 
 ### CO2 Lognormal - looks better than gamma for this house
 ```{r}
@@ -97,21 +102,22 @@ Min, Max, Mean, 5th & 95th percentile
 ##???? Should this be each point we have, or the daily average? I think it should be for daily average.
 
 # PM 2.5
-dmc_pm25 <- 40 #micrograms/m3????? 
+dmc_pm25 <- 35 #micrograms/m3
 min_pm25 <- 2.205927 #5th quantile
 max_pm25 <- 16.60172 #95th quantile
 
 # VOC
-dmc_voc <- 2000 #micrograms/m3???
+dmc_voc <- 750 #ppb
 min_voc <- 183.5379 #5th
 max_voc <- 751.6328 #95th
 
 # CO2
-dmc_co2 <- 2000 #???
-min_co2 <- 539.3771
-max_co2 <- 851.7108
+dmc_co2 <- 1200 #ppm
+min_co2 <- 539.3771 #5th
+max_co2 <- 851.7108 #95th
 
 ```
+
 
 
 
