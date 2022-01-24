@@ -1,0 +1,119 @@
+---
+title: "IAPI_distributions"
+author: "Kelsey Walker"
+date: "1/24/2022"
+output: html_document
+---
+
+---
+title: "IAPI_1"
+author: "Kelsey Walker"
+date: "1/15/2022"
+output: html_document
+---
+
+```{r include = FALSE}
+library("dplyr")
+library("tidyverse")
+library("readxl")
+library("lubridate")
+library("ggplot2")
+library("fitdistrplus")
+library("fmsb") #for radar/spider chart
+```
+
+# Read in data
+```{r}
+data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>% 
+  filter(location == 'living') %>%
+  dplyr::select(id_home, datetime, date, co2, voc, pm25, temp, humid) %>%
+  na.omit(data)
+
+#write_csv(data, "omni__001.csv")
+ 
+#create daily averages
+  data_daily <- data %>%
+  group_by(id_home, date) %>%
+  summarise(pm25 = mean(pm25), co2 = mean(co2), voc = mean(voc), temp = mean(temp), humid = mean(humid))
+    
+  
+```
+
+  
+# Distributions
+From Table 2 (Sofuoglu, 2003)
+-PM25 gamma
+-VOC lognormal
+-CO2? lognormal??
+
+### PM2.5 Gamma (FIX ERROR NANs produced! How to extract just quantile value?)
+```{r}
+#plotdist(data_daily$pm25, histo=TRUE, demp = TRUE) #pdf and cdf
+#descdist(data_daily$pm25, boot = 1000) #descritptive stats
+fpm25 <- fitdist(data_daily$pm25, "gamma", method = "mle", lower= c(0,0), start = list(scale = 1, shape = 1))
+denscomp(fpm25)
+cdfcomp(fpm25)
+
+# Solve for min and max using 5th and 95th quantile
+minq_pm25 <- quantile(fpm25, probs = 0.05) #5th quantile
+#min_pm25 <- minq_pm25[[1]]
+maxq_pm25 <- quantile(fpm25, probs = .95) #95th quantile
+#max_pm25 <- maxq_pm25[[1]]
+```
+
+### VOC Lognormal (Gamma looks better for this house???)
+```{r}
+plotdist(data_daily$voc, histo=TRUE, demp = TRUE) #pdf and cdf
+descdist(data_daily$voc, boot = 1000) #descritptive stats
+fvoc <- fitdist(data_daily$voc, "lnorm")
+denscomp(fvoc)
+cdfcomp(fvoc)
+fvoc2 <- fitdist(data_daily$voc, "gamma")
+denscomp(fvoc2)
+cdfcomp(fvoc2) #gamma fits this house's data better!!!
+
+# Quantiles
+minq_voc <- quantile(fvoc, probs = 0.05) #5th quantile
+maxq_voc <- quantile(fvoc, probs = 0.95) #5th quantile
+```
+
+### CO2 Lognormal - looks better than gamma for this house
+```{r}
+plotdist(data_daily$co2, histo=TRUE, demp = TRUE) #pdf and cdf
+descdist(data_daily$co2, boot = 1000) #descritptive stats
+fco2 <- fitdist(data_daily$co2, "lnorm")
+denscomp(fco2)
+cdfcomp(fco2)
+
+# Quantiles
+minq_co2 <- quantile(fco2, probs = 0.05) #5th quantile
+maxq_co2 <- quantile(fco2, probs = 0.95) #5th quantile
+
+```
+
+Results:
+Min, Max, Mean, 5th & 95th percentile
+```{r}
+##???? Should this be each point we have, or the daily average? I think it should be for daily average.
+
+# PM 2.5
+dmc_pm25 <- 40 #micrograms/m3????? 
+min_pm25 <- 2.205927 #5th quantile
+max_pm25 <- 16.60172 #95th quantile
+
+# VOC
+dmc_voc <- 2000 #micrograms/m3???
+min_voc <- 183.5379 #5th
+max_voc <- 751.6328 #95th
+
+# CO2
+dmc_co2 <- 2000 #???
+min_co2 <- 539.3771
+max_co2 <- 851.7108
+
+```
+
+
+
+
+
