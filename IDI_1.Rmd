@@ -1,0 +1,74 @@
+---
+title: "IDI_1"
+author: "Kelsey Walker"
+date: "1/30/2022"
+output: html_document
+---
+
+```{r include = FALSE}
+library("dplyr")
+library("tidyverse")
+library("readxl")
+library("lubridate")
+library("ggplot2")
+library("fitdistrplus")
+```
+
+# Read in data
+```{r}
+data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>% 
+  filter(location == 'living') %>%
+  dplyr::select(id_home, datetime, date, temp, humid) %>%
+  na.omit(data)
+
+#write_csv(data, "omni__001.csv")
+ 
+#create daily averages
+  data_daily <- data %>%
+  group_by(id_home, date) %>%
+  summarise(temp = mean(temp), humid = mean(humid))
+```
+
+  
+# Parameters
+Results:
+Min, Max, Mean, 5th & 95th percentile
+```{r}
+
+# Temperature
+T_lcl <- 19 #lower comfort limit (deg C)
+T_ucl <- 25 #upper comfort limit (deg C)
+T_opt <- 22 #optimal temp (deg C)
+
+# Relative Humidity
+RH_lcl <- 35 #lower comfort limit (%)
+RH_ucl <- 55 #upper comfort limit (%)
+RH_opt <- 45 #optimal RH (%)
+
+```
+
+# Boundary Conditions
+```{r}
+inputs <- data_daily %>%
+  
+# Temperature
+  #1. If Obs < T_lcl
+  mutate(temp = replace (temp, temp < 16, T_lcl)) %>% #note that 16 is not T_lcl
+  # 2. If Obs > T_ucl
+  mutate(temp = replace(temp, temp > 28, T_ucl)) %>% #note that 28 is not T_ucl
+
+# Relative Humidity
+  #1. If Obs < T_lcl
+  mutate(humid = replace (humid, humid < 25, RH_ucl)) %>%
+  # 2. If Obs > T_ucl
+  mutate(humid = replace(humid, humid > 65, RH_lcl)) 
+```
+
+# IDI Index 
+```{r}
+index <- inputs %>%
+  mutate( temp_level1 = 10 * ((abs(T_opt - temp))/(T_ucl - T_lcl)) ) %>%
+  mutate( humid_level1 = 10 * ((abs(RH_opt - humid))/(RH_ucl - RH_lcl)) ) %>%
+  mutate( IDI = 1/2 * (temp_level1 + humid_level1) )
+
+```
