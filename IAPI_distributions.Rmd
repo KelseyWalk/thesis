@@ -19,25 +19,24 @@ library("readxl")
 library("lubridate")
 library("ggplot2")
 library("fitdistrplus")
-library("fmsb") #for radar/spider chart
+library("goftest")
+
 ```
 
 # Read in data
 ```{r}
 data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>% 
   filter(location == 'living') %>%
-  dplyr::select(id_home, datetime, date, co2, voc, pm25, temp, humid) %>%
-  na.omit(data)
-
-#write_csv(data, "omni__001.csv")
- 
+  dplyr::select(id_home, datetime, date, co2, voc, pm25) %>%
+  na.omit(data) #remove NA rows
+  
 #create daily averages
   data_daily <- data %>%
   group_by(id_home, date) %>%
-  summarise(pm25 = mean(pm25), co2 = mean(co2), voc = mean(voc), temp = mean(temp), humid = mean(humid))
-  
-# clean up data
- #house 001 - first row outlier needs to be removed
+  filter(n() >= 22 ) %>%
+  summarise(pm25 = mean(pm25), co2 = mean(co2), voc = mean(voc)) 
+
+#write_csv(data_daily, "data_distribution.csv")
 ```
 
 
@@ -48,51 +47,147 @@ From Table 2 (Sofuoglu, 2003)
 -VOC lognormal
 -CO2? lognormal??
 
+```{r}
+h1 <- filter(data_daily, id_home == "001")
+h2 <- filter(data_daily, id_home == "002")
+h3 <- filter(data_daily, id_home == "003")
+h4 <- filter(data_daily, id_home == "004")
+h5 <- filter(data_daily, id_home == "005")
+h6 <- filter(data_daily, id_home == "006")
+h7 <- filter(data_daily, id_home == "007")
+h8 <- filter(data_daily, id_home == "008")
+h9 <- filter(data_daily, id_home == "009")
+h10 <- filter(data_daily, id_home == "010")
+h11 <- filter(data_daily, id_home == "011")
+h12 <- filter(data_daily, id_home == "012")
+h13 <- filter(data_daily, id_home == "013")
+h14 <- filter(data_daily, id_home == "014")
+h15 <- filter(data_daily, id_home == "015")
+h16 <- filter(data_daily, id_home == "016")
+h17 <- filter(data_daily, id_home == "017")
+h18 <- filter(data_daily, id_home == "018")
+h19 <- filter(data_daily, id_home == "019")
+h20 <- filter(data_daily, id_home == "020")
+h21 <- filter(data_daily, id_home == "021")
+h22 <- filter(data_daily, id_home == "022")
+h23 <- filter(data_daily, id_home == "023")
+h24 <- filter(data_daily, id_home == "024")
+h25 <- filter(data_daily, id_home == "025")
+
+pm <- dplyr::select(data_daily, id_home, pm25)
+pm2 <- filter(pm, pm25>0)
+voc <-dplyr::select(data_daily, id_home, voc)
+co2 <-dplyr::select(data_daily, id_home, co2)
+
+```
+
+
 ### PM2.5 Gamma (FIX ERROR NANs produced! How to extract just quantile value?)
 ```{r}
-#plotdist(data_daily$pm25, histo=TRUE, demp = TRUE) #pdf and cdf
+#fitdist(h2$pm25, "gamma", method = "mle", lower= c(0,0), start = list(scale = 1, shape = 1))
+
+#plotdist(h2$pm25, histo=TRUE, demp = TRUE) #pdf and cdf
+#plotdist(h20$pm25, histo=TRUE, demp = TRUE) #pdf and cdf
 #descdist(data_daily$pm25, boot = 1000) #descritptive stats
-fpm25 <- fitdist(data_daily$pm25, "gamma", method = "mle", lower= c(0,0), start = list(scale = 1, shape = 1))
-denscomp(fpm25)
-cdfcomp(fpm25)
+
+
+
+descdist(data_daily$pm25) #Cullen and Frey Graph
+
+
+fh1 <- fitdist(pm2$pm25, "gamma", method = "mle", lower = c(0,0), start = list(scale = 1, shape = 1))
+cdfcomp(fh1)
+#y1 <- rgamma(500, shape = 1, scale = 1)
+#result_pm_gamma <- ks.test(data_daily$pm25,"pgamma",1,1)
+
+
+fh2 <- fitdist(pm2$pm25, "lnorm") # lognormal cannot have negative or 0s
+cdfcomp(fh2)
+pdfcomp(fh2)
+y2 <- rlnorm(500)
+result_pm_lnorm <- ks.test(data_daily$pm25,y2)
+
+fh3 <- fitdist(pm2$pm25, "weibull", method = "mle", lower = c(0,0), start = list(scale = 1, shape = 1))
+cdfcomp(fh3)
+#y3 <- rweibull(500, shape =1, scale = 1)
+#result_pm_weib <- ks.test(data_daily$pm25,y3)
+
 
 # Solve for min and max using 5th and 95th quantile
-minq_pm25 <- quantile(fpm25, probs = 0.05) #5th quantile
+#minq2_pm25 <- quantile(fh2, probs = 0.05) #5th quantile
+#minq20_pm25 <- quantile(fh20, probs = 0.05) #5th quantile
 #min_pm25 <- minq_pm25[[1]]
-maxq_pm25 <- quantile(fpm25, probs = .95) #95th quantile
+#maxq_pm25 <- quantile(fpm25, probs = .95) #95th quantile
 #max_pm25 <- maxq_pm25[[1]]
 
 ```
 
 ### VOC Lognormal (Gamma looks better for this house???)
 ```{r}
-plotdist(data_daily$voc, histo=TRUE, demp = TRUE) #pdf and cdf
-descdist(data_daily$voc, boot = 1000) #descritptive stats
-fvoc <- fitdist(data_daily$voc, "lnorm")
-denscomp(fvoc)
-cdfcomp(fvoc)
-fvoc2 <- fitdist(data_daily$voc, "gamma")
-denscomp(fvoc2)
-cdfcomp(fvoc2) #gamma fits this house's data better!!!
+#plotdist(data_daily$voc, histo=TRUE, demp = TRUE) #pdf and cdf
+#descdist(data_daily$voc, boot = 1000) #descritptive stats
+
+descdist(data_daily$voc) #Cullen and Frey Graph
+
+fvoc1 <- fitdist(data_daily$voc, "gamma")
+#denscomp(fvoc)
+cdfcomp(fvoc1)
+
+y1 <- rgamma(500, shape = 1, scale = 1)
+result_voc_gamma <- ks.test(data_daily$voc,y1)
+
+fvoc2 <- fitdist(data_daily$voc, "lnorm")
+#denscomp(fvoc1)
+cdfcomp(fvoc2) 
+y2 <- rlnorm(500)
+result_voc_lnorm <- ks.test(data_daily$voc,y2)
+
+fvoc3 <- fitdist(data_daily$voc, "weibull")
+cdfcomp(fvoc3)
+y3 <- rweibull(500, shape =1, scale = 1)
+result_voc_weib <- ks.test(data_daily$voc,y3)
+
+
 
 # Quantiles
-minq_voc <- quantile(fvoc, probs = 0.05) #5th quantile
-maxq_voc <- quantile(fvoc, probs = 0.95) #5th quantile
+#minq_voc <- quantile(fvoc, probs = 0.05) #5th quantile
+#maxq_voc <- quantile(fvoc, probs = 0.95) #5th quantile
 
 ```
 
 
-### CO2 Lognormal - looks better than gamma for this house
+### CO2 
 ```{r}
-plotdist(data_daily$co2, histo=TRUE, demp = TRUE) #pdf and cdf
-descdist(data_daily$co2, boot = 1000) #descritptive stats
-fco2 <- fitdist(data_daily$co2, "lnorm")
-denscomp(fco2)
-cdfcomp(fco2)
+#plotdist(data_daily$co2, histo=TRUE, demp = TRUE) #pdf and cdf
+#descdist(data_daily$co2, boot = 1000) #descritptive stats
+
+descdist(data_daily$co2) #Cullen and Frey Graph
+
+#fco1 <- fitdist(data_daily$co2, "gamma")
+#cdfcomp(fco1)
+y5 <- rgamma(100000, shape =1, scale = 1)
+result_co2_gamma <- ks.test(data_daily$co2,y5)
+
+#fco2 <- fitdist(data_daily$co2, "lnorm")
+#cdfcomp(fco2)
+y6 <- rlnorm(100000)
+result_co2_lnorm <- ks.test(data_daily$co2,y6)
+
+#fco3 <- fitdist(data_daily$co2, "weibull")
+#cdfcomp(fco3)
+y7 <- rweibull(100000, shape =1, scale = 1)
+result_co2_weib <- ks.test(data_daily$co2,y7)
+
+y8 <- rbeta(100000, 5, 2)
+result_co2_beta <- ks.test(data_daily$co2,y8)
+
+#fco4 <- fitdist(data_daily$co2, "beta" )
+#cdfcomp(fco4)
+
 
 # Quantiles
-minq_co2 <- quantile(fco2, probs = 0.05) #5th quantile
-maxq_co2 <- quantile(fco2, probs = 0.95) #5th quantile
+#minq_co2 <- quantile(fco2, probs = 0.05) #5th quantile
+#maxq_co2 <- quantile(fco2, probs = 0.95) #5th quantile
 
 ```
 
