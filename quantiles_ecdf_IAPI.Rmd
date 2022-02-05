@@ -1,0 +1,52 @@
+---
+title: "IAPI_eCDF"
+author: "Kelsey Walker"
+date: "2/5/2022"
+output: html_document
+---
+
+
+```{r include = FALSE}
+library("dplyr")
+library("tidyverse")
+library("readxl")
+library("lubridate")
+library("ggplot2")
+library("fitdistrplus")
+library("goftest")
+
+```
+
+# Read in data
+```{r}
+data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>% 
+  filter(location == 'living') %>%
+  dplyr::select(id_home, datetime, date, co2, voc, pm25) %>%
+  na.omit(data) #remove NA rows
+  
+#create daily averages
+  data_daily <- data %>%
+  group_by(id_home, date) %>%
+  filter(n() >= 22 ) %>%
+  summarise(pm25 = mean(pm25), co2 = mean(co2), voc = mean(voc)) 
+```
+
+
+```{r}
+pm25 <- dplyr::select(data_daily, id_home, pm25)
+voc <-dplyr::select(data_daily, id_home, voc)
+co2 <-dplyr::select(data_daily, id_home, co2)
+
+```
+
+```{r}
+ecdf_pm25 <- ecdf(data_daily$pm25)
+F_pm25 <- ecdf_pm25(data_daily$pm25)
+# summary(F_pm25) and summary(ecdf_pm25) give stats
+q_pm <- quantile((data_daily$pm25), probs = c(0.05, 0.95), type = 4)
+#type 4 is for continuous is linear interpolation of ecdf
+
+q_co2 <- quantile((data_daily$co2), probs = c(0.05, 0.95), type =4)
+
+q_voc <- quantile((data_daily$voc), probs = c(0.05, 0.95), type =4)
+```
