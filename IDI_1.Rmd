@@ -36,9 +36,9 @@ Min, Max, Mean, 5th & 95th percentile
 ```{r}
 
 # Temperature
-T_lcl <- 19 #lower comfort limit (deg C)
-T_ucl <- 25 #upper comfort limit (deg C)
-T_opt <- 22 #optimal temp (deg C)
+T_lcl <- 18 #lower comfort limit (deg C)
+T_ucl <- 24 #upper comfort limit (deg C)
+T_opt <- 21 #optimal temp (deg C)
 
 # Relative Humidity
 RH_lcl <- 35 #lower comfort limit (%)
@@ -53,9 +53,9 @@ inputs <- data_daily %>%
   
 # Temperature
   #1. If Obs < T_lcl
-  mutate(temp = replace (temp, temp < 16, T_lcl)) %>% #note that 16 is not T_lcl
+  mutate(temp = replace (temp, temp < 15, T_lcl)) %>% #note that 16 is not T_lcl
   # 2. If Obs > T_ucl
-  mutate(temp = replace(temp, temp > 28, T_ucl)) %>% #note that 28 is not T_ucl
+  mutate(temp = replace(temp, temp > 27, T_ucl)) %>% #note that 28 is not T_ucl
 
 # Relative Humidity
   #1. If Obs < T_lcl
@@ -71,4 +71,5 @@ index <- inputs %>%
   mutate( humid_level1 = 10 * ((abs(RH_opt - humid))/(RH_ucl - RH_lcl)) ) %>%
   mutate( IDI = 1/2 * (temp_level1 + humid_level1) )
 
+write_csv(index, "IDI_new_index.csv")
 ```
