@@ -27,39 +27,32 @@ data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>%
 #create daily averages
   data_daily <- data %>%
   group_by(id_home, date) %>%
+  filter(n() >= 22 ) %>% #Only include days where at least 22hrs of monitoring existed
   summarise(pm25 = mean(pm25), co2 = mean(co2), voc = mean(voc), temp = mean(temp), humid = mean(humid))
-    
-  
 ```
 
   
 # Distributions
-From Table 2 (Sofuoglu, 2003)
--PM25 gamma
--VOC lognormal
--CO2? lognormal??
-
-
-
 Results:
 Min, Max, Mean, 5th & 95th percentile
 ```{r}
-##???? Should this be each point we have, or the daily average? I think it should be for daily average.
+# dmc 2/5/22
+# quanitles, ecdf linear interpolation 2/5/22
 
 # PM 2.5
-dmc_pm25 <- 35 #micrograms/m3????? 
-min_pm25 <- 2.205927 #5th quantile
-max_pm25 <- 16.60172 #95th quantile
+dmc_pm25 <- 15 #micrograms/m3 
+min_pm25 <- 1.05 #5th quantile
+max_pm25 <- 25.12 #95th quantile
 
 # VOC
-dmc_voc <- 750 #micrograms/m3???
-min_voc <- 183.5379 #5th
-max_voc <- 751.6328 #95th
+dmc_voc <- 200 #micrograms/m3 = ppb
+min_voc <- 99.32 #5th
+max_voc <- 1082.09 #95th
 
 # CO2
-dmc_co2 <- 1200 #???
-min_co2 <- 539.3771
-max_co2 <- 851.7108
+dmc_co2 <- 1000 #ppm
+min_co2 <- 457.13 #5th
+max_co2 <- 1117.34 #95th
 
 ```
 
@@ -73,8 +66,6 @@ inputs <- data_daily %>%
   rename(co2_L = co2) %>%
   mutate(co2_W = co2_L, .after=co2_L) %>%
   dplyr::select(!c(temp, humid))
-
-  
 ```
 
 ## Meet Conditions for IAPI equation Cobs>Cmin, Cobs<Cmas, Cobs<Cdmc #DISCUSS dmc
@@ -148,9 +139,7 @@ results <- dplyr::select(index, id_home, date, pm25_level1, voc_level1, co2_leve
 ```{r}
 #write_csv(results, "results_IAPI_1_001.csv")
 #write_csv(index, "index_IAPI_1_001.csv")
-
 ```
-
 
 # Time Series
 ```{r}
