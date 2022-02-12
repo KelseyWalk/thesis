@@ -137,7 +137,8 @@ results <- dplyr::select(index, id_home, date, pm25_level1, voc_level1, co2_leve
 ```
 
 ```{r}
-#write_csv(results, "results_IAPI_1_001.csv")
+IAPI <- dplyr::select(results, id_home,date, IAPI)
+#write_rds(IAPI, "IAPI_1.rds")
 #write_csv(index, "index_IAPI_1_001.csv")
 ```
 
