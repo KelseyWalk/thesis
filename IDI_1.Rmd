@@ -71,5 +71,6 @@ index <- inputs %>%
   mutate( humid_level1 = 10 * ((abs(RH_opt - humid))/(RH_ucl - RH_lcl)) ) %>%
   mutate( IDI = 1/2 * (temp_level1 + humid_level1) )
 
-write_csv(index, "IDI_new_index.csv")
+IDI <- dplyr::select(index, id_home, date, IDI)
+#write_rds(IDI, "IDI.rds")
 ```
