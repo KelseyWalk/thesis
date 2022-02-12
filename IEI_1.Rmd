@@ -1,0 +1,32 @@
+---
+title: "IEI_1"
+author: "Kelsey Walker"
+date: "2/11/2022"
+output: html_document
+---
+```{r include = FALSE}
+library("dplyr")
+library("tidyverse")
+library("readxl")
+library("lubridate")
+library("ggplot2")
+library("fitdistrplus")
+```
+
+# Read in data
+```{r}
+IAPI <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/IAPI_1.rds") 
+IDI <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/IDI.rds") 
+```
+
+```{r}
+IEI_results <- left_join(IAPI, IDI, by = c("id_home", "date")) %>%
+  mutate( IEI = (IAPI + IDI)/2) %>%
+  mutate(IAPI_percent = IAPI/ (IAPI + IDI) *100) %>%
+  mutate(IDI_percent = IDI/(IAPI + IDI) *100)
+
+IEI <- dplyr::select(IEI_results, id_home, date, IEI)
+#write_rds(IDI, "IEI.rds")
+
+```
+
