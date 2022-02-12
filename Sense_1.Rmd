@@ -1,0 +1,95 @@
+---
+title: "Sense_1"
+author: "Kelsey Walker"
+date: "2/6/2022"
+output: html_document
+---
+
+# Librarys
+```{r include = FALSE}
+library("dplyr")
+library("tidyverse")
+library("readxl")
+library("lubridate")
+library("ggplot2")
+library("fitdistrplus")
+```
+
+# Read in Data
+```{r}
+sense <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/sense_hourly.rds") %>%
+  #filter(id_home == '001') %>%
+  #na.omit(sense) %>%
+  dplyr::select(!c(year, month, day)) %>%
+  relocate(datetime, .before = hod) 
+  
+omni <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>%
+  filter(location == 'living') %>%
+  #filter(id_home == '001') %>%
+  na.omit(omni) %>%
+  dplyr::select(datetime, id_home) 
+```
+
+# Combine omni and sense based on id_home and datetime
+```{r}
+data <- right_join(sense, omni, by = c("id_home", "datetime")) %>%
+  drop_na(avg_wattage)
+```
+
+# Chategorize data
+```{r}
+data_char <- dplyr::select(data, id_home, datetime, device_type) #%>% #select columns of interest
+
+#filter data
+cooking <- filter(data_char, device_type == 'oven'| device_type == 'microwave' |   
+                    device_type == 'stove top' | device_type == 'coffee maker' | 
+                    device_type == 'tea kettle' | device_type == 'toaster oven') 
+  
+  cooking_hr <- distinct(cooking, datetime, id_home, device_type) %>%
+    mutate(date1 = date(datetime)) %>%
+    group_by(id_home, date1) %>%
+    count(date1)
+
+  
+  #cleaning <- filter(data_char, device_type == 'disposal' | device_type == 'washer' | device_type == 'dryer' | device_type == 'vacuum')
+  #cleaning_hr <- distinct(cleaning, datetime, id_home)
+    
+ # people <- filter(data_char, device_type == 'tv' | device_type == 'light' | device_type =='tv/monitor')
+  people_hr <- distinct(people, datetime, id_home)
+  
+# group by day and id_home
+```
+
+# Data Characterization
+```{r}
+# Hourly energy use for each house
+data_agg_hr <- data %>%
+  group_by(id_home, datetime) %>%
+  summarise(sum(avg_wattage)) %>%
+  #rename(avg_watt = 'sum(avg_wattage)') %>%
+  drop_na('sum(avg_wattage)')
+
+#Total house use - need to divide by number of days of sense recordings
+data_agg_house <- data %>%
+  group_by(id_home) %>%
+  summarise(sum(avg_wattage)) %>%
+  rename(avg_watt = 'sum(avg_wattage)')
+  
+```
+
+# Plots
+```{r}
+ggplot(data_agg_hr, aes(datetime, 'sum(avg_watt)')) +
+  geom_line()
+```
+
+## House 001
+```{r}
+#data_001 <- filter(data, id_home == '001')
+  #ggplot(data_001_agg, aes(datetime, 'sum(avg_wattage)')) +
+           #geom_line()
+#data_c1 <- filter(data_001, sense_device_name == 'vacuum')
+#unique(data_001$sense_device_name)
+# write_csv(data_001, "sense_001.csv")
+```
+
