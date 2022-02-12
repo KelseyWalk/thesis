@@ -18,50 +18,53 @@ library("fitdistrplus")
 # Read in Data
 ```{r}
 sense <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/sense_hourly.rds") %>%
-  #filter(id_home == '001') %>%
-  #na.omit(sense) %>%
   dplyr::select(!c(year, month, day)) %>%
-  relocate(datetime, .before = hod) 
+  relocate(datetime, .before = hod) %>%
+  mutate(date = date(datetime)) %>%
+  relocate(date, .after = datetime)
   
-omni <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>%
-  filter(location == 'living') %>%
-  #filter(id_home == '001') %>%
-  na.omit(omni) %>%
-  dplyr::select(datetime, id_home) 
 ```
 
-# Combine omni and sense based on id_home and datetime
+# Charactegorize data by energy use activities: cooking, cleaning, people
 ```{r}
-data <- right_join(sense, omni, by = c("id_home", "datetime")) %>%
-  drop_na(avg_wattage)
-```
+data_char <- dplyr::select(sense, id_home, datetime, date, device_type) #%>% #select columns of interest
 
-# Chategorize data
-```{r}
-data_char <- dplyr::select(data, id_home, datetime, device_type) #%>% #select columns of interest
-
-#filter data
+# Cooking
 cooking <- filter(data_char, device_type == 'oven'| device_type == 'microwave' |   
                     device_type == 'stove top' | device_type == 'coffee maker' | 
-                    device_type == 'tea kettle' | device_type == 'toaster oven') 
-  
-  cooking_hr <- distinct(cooking, datetime, id_home, device_type) %>%
-    mutate(date1 = date(datetime)) %>%
-    group_by(id_home, date1) %>%
-    count(date1)
+                    device_type == 'tea kettle' | device_type == 'toaster oven')
+cooking_hr <- group_by(cooking, id_home, date) %>%
+  count(date) %>%
+  rename(cooking_hr = n)
 
-  
-  #cleaning <- filter(data_char, device_type == 'disposal' | device_type == 'washer' | device_type == 'dryer' | device_type == 'vacuum')
-  #cleaning_hr <- distinct(cleaning, datetime, id_home)
+# Cleaning
+cleaning <- filter(data_char, device_type == 'disposal' | device_type == 'washer' | 
+                     device_type == 'dryer' | device_type == 'vacuum')
+cleaning_hr <- group_by(cleaning, id_home, date) %>%
+  count(date) %>%
+  rename(cleaning_hr = n)
+
     
- # people <- filter(data_char, device_type == 'tv' | device_type == 'light' | device_type =='tv/monitor')
-  people_hr <- distinct(people, datetime, id_home)
-  
-# group by day and id_home
+people <- filter(data_char, device_type == 'tv' | device_type == 'light' | device_type =='tv/monitor')
+people_hr <- group_by(people, id_home, date) %>%
+  count(date) %>%
+  rename(people_hr = n)
 ```
 
-# Data Characterization
+# Create dataframe of activities
 ```{r}
+summary <- full_join(cooking_hr, cleaning_hr, by = c("id_home", "date")) %>%
+  full_join(people_hr, by = c("id_home", "date")) %>%
+  replace_na(na)
+
+#NA = 0
+```
+
+
+
+
+# Data Characterization
+#```{r}
 # Hourly energy use for each house
 data_agg_hr <- data %>%
   group_by(id_home, datetime) %>%
@@ -75,21 +78,21 @@ data_agg_house <- data %>%
   summarise(sum(avg_wattage)) %>%
   rename(avg_watt = 'sum(avg_wattage)')
   
-```
+#```
 
 # Plots
-```{r}
+#```{r}
 ggplot(data_agg_hr, aes(datetime, 'sum(avg_watt)')) +
   geom_line()
-```
+#```
 
 ## House 001
-```{r}
-#data_001 <- filter(data, id_home == '001')
+#```{r}
+data_001 <- filter(data, id_home == '001')
   #ggplot(data_001_agg, aes(datetime, 'sum(avg_wattage)')) +
            #geom_line()
-#data_c1 <- filter(data_001, sense_device_name == 'vacuum')
-#unique(data_001$sense_device_name)
-# write_csv(data_001, "sense_001.csv")
-```
+data_c1 <- filter(data_001, sense_device_name == 'vacuum')
+unique(data_001$sense_device_name)
+ write_csv(data_001, "sense_001.csv")
+#```
 
