@@ -16,15 +16,27 @@ library("fitdistrplus")
 
 # Read in data
 ```{r}
-data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>% 
-  filter(location == 'living') %>%
+data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") 
+  
+ living <-  filter(data, location == "living") %>%
   dplyr::select(id_home, datetime, date, temp, humid) %>%
   na.omit(data)
 
-#write_csv(data, "omni__001.csv")
+kitchen <- filter(data, location == 'kitchen') %>%
+  dplyr::select(id_home, datetime, date, temp, humid) %>%
+  na.omit(data)
+
+data2 <- dplyr::bind_rows(living,kitchen) %>%
+  group_by(id_home, datetime) %>%
+  summarise_each(funs(mean)) %>%
+  mutate( date = date(datetime)) %>%
+  group_by(id_home, date) %>%
+  filter(n() >= 22 )
+```
  
 #create daily averages
-  data_daily <- data %>%
+```{r}
+  data_daily <- data2 %>%
   group_by(id_home, date) %>%
   summarise(temp = mean(temp), humid = mean(humid))
 ```

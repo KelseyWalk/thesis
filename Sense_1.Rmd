@@ -23,6 +23,7 @@ sense <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/sense_hourly.rds") %
   mutate(date = date(datetime)) %>%
   relocate(date, .after = datetime)
   
+# unique(sense$device_type)
 ```
 
 # Charactegorize data by energy use activities: cooking, cleaning, people
@@ -33,31 +34,52 @@ data_char <- dplyr::select(sense, id_home, datetime, date, device_type) #%>% #se
 cooking <- filter(data_char, device_type == 'oven'| device_type == 'microwave' |   
                     device_type == 'stove top' | device_type == 'coffee maker' | 
                     device_type == 'tea kettle' | device_type == 'toaster oven')
-cooking_hr <- group_by(cooking, id_home, date) %>%
+
+cooking_hr <- dplyr::select(cooking, c("id_home", "datetime") ) %>%
+  distinct(id_home, datetime, .keep_all = TRUE) %>% #only keep rows of unique id_home and datetime combo
+  mutate(date = date(datetime)) %>%
+  group_by(id_home, date) %>%
   count(date) %>%
   rename(cooking_hr = n)
 
 # Cleaning
 cleaning <- filter(data_char, device_type == 'disposal' | device_type == 'washer' | 
                      device_type == 'dryer' | device_type == 'vacuum')
-cleaning_hr <- group_by(cleaning, id_home, date) %>%
+cleaning_hr <- dplyr::select(cleaning, c("id_home", "datetime") ) %>%
+  distinct(id_home, datetime, .keep_all = TRUE) %>% #only keep rows of unique id_home and datetime combo
+  mutate(date = date(datetime)) %>%
+  group_by(id_home, date) %>%
   count(date) %>%
   rename(cleaning_hr = n)
 
-    
+# People
 people <- filter(data_char, device_type == 'tv' | device_type == 'light' | device_type =='tv/monitor')
-people_hr <- group_by(people, id_home, date) %>%
+people_hr <- dplyr::select(people, c("id_home", "datetime") ) %>%
+  distinct(id_home, datetime, .keep_all = TRUE) %>% #only keep rows of unique id_home and datetime combo
+  mutate(date = date(datetime)) %>%
+  group_by(id_home, date) %>%
   count(date) %>%
   rename(people_hr = n)
+
+# ALL (ALL days of data that have energy use, some will include days/hours not recorded in the three categories above)
+all <- data_char %>%
+  distinct(id_home, datetime, .keep_all = TRUE) %>%
+  mutate(date = date(datetime)) %>%
+  group_by(id_home, date) %>%
+  count(date) %>%
+  rename(other_hr = n)
+
 ```
 
 # Create dataframe of activities
 ```{r}
 summary <- full_join(cooking_hr, cleaning_hr, by = c("id_home", "date")) %>%
   full_join(people_hr, by = c("id_home", "date")) %>%
-  replace_na(na)
+  full_join(all, by = c("id_home", "date")) %>%
+  dplyr::select(!c(other_hr))
+summary[is.na(summary)] <- 0 #replace NA with 0
 
-#NA = 0
+#write_rds(summary, "energy_activity_hour.rds")
 ```
 
 

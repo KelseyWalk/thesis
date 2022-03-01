@@ -15,19 +15,18 @@ library("fitdistrplus")
 
 # Read in data
 ```{r}
-IAPI <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/IAPI_1.rds") 
-IDI <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/IDI.rds") 
+IAPI_data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/IAPI_1.rds") 
+IDI_data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/IDI.rds") 
 ```
 
 ```{r}
-results <- left_join(IAPI, IDI, by = c("id_home", "date")) %>%
+results <- inner_join(IAPI_data, IDI_data, by = c("id_home", "date")) %>%
   mutate( IEI = (IAPI + IDI)/2) %>%
   mutate(IAPI_percent = IAPI/ (IAPI + IDI) *100) %>%
   mutate(IDI_percent = IDI/(IAPI + IDI) *100)
 
 IEI <- dplyr::select(results, id_home, date, IEI)
-#write_rds(IDI, "IEI.rds")
-
+#write_rds(IEI, "IEI.rds")
 ```
 
 #Plot

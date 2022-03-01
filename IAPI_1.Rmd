@@ -13,21 +13,33 @@ library("lubridate")
 library("ggplot2")
 library("fitdistrplus")
 library("fmsb") #for radar/spider chart
+library("data.table")
 ```
 
 # Read in data
 ```{r}
-data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>% 
-  filter(location == 'living') %>%
-  dplyr::select(id_home, datetime, date, co2, voc, pm25, temp, humid) %>%
-  na.omit(data)
+data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") 
 
-#write_csv(data, "omni__001.csv")
- 
-#create daily averages
-  data_daily <- data %>%
+living <-   filter(data, location == 'living') %>%
+  dplyr::select(id_home, datetime, co2, voc, pm25, temp, humid) %>%
+  na.omit(living)
+
+kitchen <- filter(data, location == 'kitchen') %>%
+  dplyr::select(id_home, datetime, co2, voc, pm25, temp, humid) %>%
+  na.omit(kitchen)
+
+data2 <- dplyr::bind_rows(living,kitchen) %>%
+  group_by(id_home, datetime) %>%
+  summarise_each(funs(mean)) %>%
+  mutate( date = date(datetime)) %>%
   group_by(id_home, date) %>%
-  filter(n() >= 22 ) %>% #Only include days where at least 22hrs of monitoring existed
+  filter(n() >= 22 ) #Only include days where at least 22hrs of monitoring existed
+#write_csv(data, "omni__001.csv")
+```
+
+#create daily averages
+```{r}
+  data_daily <- data2 %>%
   summarise(pm25 = mean(pm25), co2 = mean(co2), voc = mean(voc), temp = mean(temp), humid = mean(humid))
 ```
 
@@ -139,7 +151,7 @@ results <- dplyr::select(index, id_home, date, pm25_level1, voc_level1, co2_leve
 ```{r}
 IAPI <- dplyr::select(results, id_home,date, IAPI)
 #write_rds(IAPI, "IAPI_1.rds")
-#write_csv(index, "index_IAPI_1_001.csv")
+#write_csv(results, "IAPI_1.csv")
 ```
 
 # Time Series
