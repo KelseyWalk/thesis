@@ -25,7 +25,7 @@ results <- inner_join(IAPI_data, IDI_data, by = c("id_home", "date")) %>%
   mutate(IAPI_percent = IAPI/ (IAPI + IDI) *100) %>%
   mutate(IDI_percent = IDI/(IAPI + IDI) *100)
 
-IEI <- dplyr::select(results, id_home, date, IEI)
+IEI <- dplyr::select(results, id_home, date, IAPI, IDI, IEI)
 #write_rds(IEI, "IEI.rds")
 ```
 
