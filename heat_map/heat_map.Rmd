@@ -1,0 +1,117 @@
+---
+title: "heat_map"
+author: "Kelsey Walker"
+date: "3/1/2022"
+output: html_document
+---
+
+# Librarys
+```{r include = FALSE}
+library("dplyr")
+library("tidyverse")
+library("ggplot2")
+library("reshape2")
+library("lubridate")
+library("Hmisc")
+library("stats")
+```
+
+# Read in Processed Data
+```{r}
+sense <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/heat_map/energy_activity.rds") %>%
+  rename('T Control (min)' = t_control_min) %>%
+  rename('Cooking (min)' = cooking_min) %>%
+  rename("Cleaning (min)" = cleaning_min)
+  
+
+IEI <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/heat_map/IEI.rds") 
+
+house <- read_csv("~kelseywalker/Desktop/EPIC HOMES/R_thesis/heat_map/house_variables.csv") %>%
+  dplyr::select(!c(address))
+
+```
+
+# Read in individual indoor and outdoor agents
+```{r}
+# Outdoor
+outdoor <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>%
+  filter(location == 'outdoor') %>%
+  dplyr::select(id_home, datetime, co2, voc, pm25, temp, humid) %>%
+  na.omit(outdoor) %>%
+  mutate( date = date(datetime)) %>%
+  group_by(id_home, date) %>%
+  filter(n() >= 22 ) #Only include days where at least 22hrs of monitoring existed
+
+outdoor_daily <- outdoor %>%
+  summarise(pm25 = mean(pm25), co2 = mean(co2), voc = mean(voc), temp = mean(temp), humid = mean(humid)) %>%
+  rename(pm25_out = pm25) %>%
+  rename(co2_out = co2) %>%
+  rename(tvoc_out = voc) %>%
+  rename(T_out = temp) %>%
+  rename(RH_out = humid)
+
+# Indoor (Kitchen & Living from IAPI_1.Rmd)
+indoor_daily <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_daily_processed.rds") %>%
+  rename(pm25_in = pm25) %>%
+  rename(co2_in = co2) %>%
+  rename(tvoc_in = voc) %>%
+  rename(T_in = temp) %>%
+  rename(RH_in = humid)
+
+agents <- full_join(indoor_daily, outdoor_daily, by = c('id_home', 'date'))
+```
+
+# Join datasets for id_home and when date1 = date1
+```{r}
+# Continuous Dataset
+data <- inner_join(sense, IEI, by = c('id_home', 'date')) %>%
+  ungroup()#OMNI and SENSE
+#hr x-axis, IEI y-axis
+
+data <- inner_join(data, agents, by = c('id_home', 'date'))
+
+data <- dplyr::select(data, !c('id_home', 'date')) %>%
+  relocate(IEI, .before = "Cleaning (min)") %>%
+  relocate(IAPI, .after = IEI) %>%
+  relocate(IDI, .after = IAPI) %>%
+  relocate('Cooking (min)', .after = IDI) #%>%
+ 
+# Categorical Dataset
+index_avg <- IEI %>%
+  dplyr::select(!c(date)) %>%
+  group_by(id_home) %>%
+  summarise_each(funs(mean)) 
+  
+data2 <- merge(index_avg, house, by = c('id_home')) %>% #house characteristics 
+  dplyr::select(!c(id_home))
+
+```
+
+# Heatmap Continuous 
+```{r}
+cormatrix = rcorr(as.matrix(data), type = 'spearman')
+cordata = reshape2::melt(cormatrix$r)
+
+ggplot(cordata, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() + xlab("") + ylab("") + 
+  geom_tile(color = "black") +
+  scale_fill_gradientn(colors = hcl.colors(20, "RdYlGn"), limit = c(-1,1), space = "Lab", name = "Pearson\nCorrelation") +
+  geom_text(aes(label = round(value, digits = 2)), color = "black", size = 2) +
+  theme(axis.text.x = element_text(angle = 90))
+
+#ggsave(filename = "heatmap_continuous.jpg", plot = p1)
+```
+# Heatmap Categorical 
+```{r}
+cormatrix = rcorr(as.matrix(data2), type = 'spearman')
+cordata = reshape2::melt(cormatrix$r)
+
+ggplot(cordata, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() + xlab("") + ylab("") + 
+  geom_tile(color = "black") +
+  scale_fill_gradientn(colors = hcl.colors(20, "RdYlGn"), limit = c(-1,1), space = "Lab", name = "Pearson\nCorrelation") +
+  geom_text(aes(label = round(value, digits = 2)), color = "black", size = 2) +
+  theme(axis.text.x = element_text(angle = 90))
+
+
+```
