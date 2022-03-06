@@ -26,8 +26,7 @@ sense <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/heat_map/energy_acti
 
 IEI <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/heat_map/IEI.rds") 
 
-house <- read_csv("~kelseywalker/Desktop/EPIC HOMES/R_thesis/heat_map/house_variables.csv") %>%
-  dplyr::select(!c(address))
+house <- read_csv("~kelseywalker/Desktop/EPIC HOMES/R_thesis/heat_map/house_variables.csv") 
 
 ```
 
@@ -80,14 +79,18 @@ data <- dplyr::select(data, !c('id_home', 'date')) %>%
 index_avg <- IEI %>%
   dplyr::select(!c(date)) %>%
   group_by(id_home) %>%
-  summarise_each(funs(mean)) 
+  summarise_each(funs(mean)) %>%
+  rename("IEI avg" = IEI) %>%
+  rename("IAPI avg" = IAPI) %>%
+  rename("IDI avg" = IDI)
   
-data2 <- merge(index_avg, house, by = c('id_home')) %>% #house characteristics 
-  dplyr::select(!c(id_home))
+data3 <- merge(index_avg, house, by = c('id_home')) %>% #house characteristics 
+  dplyr::select(!c(id_home)) %>%
+  relocate ("IEI avg", .before = "IAPI avg")
 
 ```
 
-# Heatmap Continuous 
+# Heat Map Continuous
 ```{r}
 cormatrix = rcorr(as.matrix(data), type = 'spearman')
 cordata = reshape2::melt(cormatrix$r)
@@ -96,13 +99,16 @@ ggplot(cordata, aes(x = Var1, y = Var2, fill = value)) +
   geom_tile() + xlab("") + ylab("") + 
   geom_tile(color = "black") +
   scale_fill_gradientn(colors = hcl.colors(20, "RdYlGn"), limit = c(-1,1), space = "Lab", name = "Pearson\nCorrelation") +
-  geom_text(aes(label = round(value, digits = 2)), color = "black", size = 2) +
-  theme(axis.text.x = element_text(angle = 90))
+  geom_text(aes(label = round(value, digits = 2)), color = "black", size = 3) +
+  theme(axis.text.x = element_text(angle = 90)) + 
+  labs(title="Continuous Heat Map")
 
 #ggsave(filename = "heatmap_continuous.jpg", plot = p1)
 ```
-# Heatmap Categorical 
+### 2nd round Continuous Heat Map 
 ```{r}
+data2 <- dplyr::select(data, c(IEI, IAPI, IDI, "Cooking (min)", co2_in, pm25_in, pm25_out, RH_in, RH_out, T_in, T_out ))
+
 cormatrix = rcorr(as.matrix(data2), type = 'spearman')
 cordata = reshape2::melt(cormatrix$r)
 
@@ -110,8 +116,44 @@ ggplot(cordata, aes(x = Var1, y = Var2, fill = value)) +
   geom_tile() + xlab("") + ylab("") + 
   geom_tile(color = "black") +
   scale_fill_gradientn(colors = hcl.colors(20, "RdYlGn"), limit = c(-1,1), space = "Lab", name = "Pearson\nCorrelation") +
-  geom_text(aes(label = round(value, digits = 2)), color = "black", size = 2) +
-  theme(axis.text.x = element_text(angle = 90))
+  geom_text(aes(label = round(value, digits = 2)), color = "black", size = 4) +
+  theme(axis.text.x = element_text(angle = 90)) + 
+  labs(title="Continuous Heat Map - Round 2")
 
+#ggsave(filename = "heatmap_continuous_2.jpg", plot = p2)
+
+```
+
+# Heat Map Categorical 
+```{r}
+cormatrix = rcorr(as.matrix(data3), type = 'spearman')
+cordata = reshape2::melt(cormatrix$r)
+
+ggplot(cordata, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() + xlab("") + ylab("") + 
+  geom_tile(color = "black") +
+  scale_fill_gradientn(colors = hcl.colors(20, "RdYlGn"), limit = c(-1,1), space = "Lab", name = "Pearson\nCorrelation") +
+  geom_text(aes(label = round(value, digits = 2)), color = "black", size = 2) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title="Categorical Heat Map")
+
+#ggsave(filename = "heatmap_categorical.jpg", plot = p3)
+```
+### 2nd Round - Heat Map Categorical
+```{r}
+data4 <- select(data3, c("IEI avg", "IAPI avg", "IDI avg", "year built", ACH50, "conditioned area", floors, market_value, "2021 median income", "rental?", occupants, "months occupied", "% of occupants home M-F", "% of occupants home S-S", "energy star appl.", smoking))
+
+cormatrix = rcorr(as.matrix(data4), type = 'spearman')
+cordata = reshape2::melt(cormatrix$r)
+
+ggplot(cordata, aes(x = Var1, y = Var2, fill = value)) +
+  geom_tile() + xlab("") + ylab("") + 
+  geom_tile(color = "black") +
+  scale_fill_gradientn(colors = hcl.colors(20, "RdYlGn"), limit = c(-1,1), space = "Lab", name = "Pearson\nCorrelation") +
+  geom_text(aes(label = round(value, digits = 2)), color = "black", size = 2) +
+  theme(axis.text.x = element_text(angle = 90)) +
+  labs(title="Categorical Heat Map - Round 2")
+
+#ggsave(filename = "heatmap_categorical_2.jpg", plot = p4)
 
 ```
