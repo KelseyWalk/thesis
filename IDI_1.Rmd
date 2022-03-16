@@ -17,7 +17,6 @@ library("fitdistrplus")
 # Read in daily data
 ```{r}
 data_daily <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_daily_processed.rds") 
-  
 
 ```
  
@@ -33,8 +32,8 @@ T_ucl <- 24 #upper comfort limit (deg C)
 T_opt <- 21 #optimal temp (deg C)
 
 # Relative Humidity
-RH_lcl <- 35 #lower comfort limit (%)
-RH_ucl <- 55 #upper comfort limit (%)
+RH_lcl <- 37.5 #lower comfort limit (%)
+RH_ucl <- 52.5 #upper comfort limit (%)
 RH_opt <- 45 #optimal RH (%)
 
 ```
@@ -51,9 +50,9 @@ inputs <- data_daily %>%
 
 # Relative Humidity
   #1. If Obs < T_lcl
-  mutate(humid = replace (humid, humid < 25, RH_ucl)) %>%
+  mutate(humid = replace (humid, humid < 30, RH_ucl)) %>%
   # 2. If Obs > T_ucl
-  mutate(humid = replace(humid, humid > 65, RH_lcl)) 
+  mutate(humid = replace(humid, humid > 60, RH_lcl)) 
 ```
 
 # IDI Index 

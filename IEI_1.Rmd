@@ -17,6 +17,7 @@ library("fitdistrplus")
 ```{r}
 IAPI_data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/IAPI_1.rds") 
 IDI_data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/IDI.rds") 
+
 ```
 
 ```{r}
