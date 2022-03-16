@@ -51,23 +51,22 @@ data2 <- bind_rows(living,kitchen) %>%
 Results:
 Min, Max, Mean, 5th & 95th percentile
 ```{r}
-# dmc 2/5/22
-# quanitles, ecdf linear interpolation 2/5/22
-
+# dmc data from 3/14/2022
+# quanitles, ecdf linear interpolation 3/15
 # PM 2.5
 dmc_pm25 <- 15 #micrograms/m3 
-min_pm25 <- 1.05 #5th quantile
-max_pm25 <- 25.12 #95th quantile
+min_pm25 <- 0.968 #5th quantile
+max_pm25 <- 33.215 #95th quantile
 
 # VOC
 dmc_voc <- 200 #micrograms/m3 = ppb
-min_voc <- 99.32 #5th
-max_voc <- 1082.09 #95th
+min_voc <- 108.744 #5th
+max_voc <- 1233.404 #95th
 
 # CO2
 dmc_co2 <- 1000 #ppm
-min_co2 <- 457.13 #5th
-max_co2 <- 1117.34 #95th
+min_co2 <- 461.877 #5th
+max_co2 <- 1073.565#95th
 
 ```
 
@@ -153,7 +152,7 @@ results <- dplyr::select(index, id_home, date, pm25_level1, voc_level1, co2_leve
 
 ```{r}
 IAPI <- dplyr::select(results, id_home,date, IAPI)
-write_rds(IAPI, "IAPI_1.rds")
+#write_rds(IAPI, "IAPI_1.rds")
 #write_csv(results, "IAPI_1.csv")
 ```
 

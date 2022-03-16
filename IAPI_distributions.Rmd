@@ -25,16 +25,10 @@ library("goftest")
 
 # Read in data
 ```{r}
-data <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_1hour.rds") %>% 
-  filter(location == 'living') %>%
-  dplyr::select(id_home, datetime, date, co2, voc, pm25) %>%
+data_daily <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/omni_daily_processed.rds") %>% 
+  dplyr::select(id_home, date, co2, voc, pm25, temp, humid) %>%
   na.omit(data) #remove NA rows
   
-#create daily averages
-  data_daily <- data %>%
-  group_by(id_home, date) %>%
-  filter(n() >= 22 ) %>%
-  summarise(pm25 = mean(pm25), co2 = mean(co2), voc = mean(voc)) 
 
 #write_csv(data_daily, "data_distribution.csv")
 ```
@@ -187,7 +181,7 @@ result_co2_beta <- ks.test(data_daily$co2,y8)
 
 # Quantiles
 #minq_co2 <- quantile(fco2, probs = 0.05) #5th quantile
-#maxq_co2 <- quantile(fco2, probs = 0.95) #5th quantile
+#maxq_co2 <- quantile(fco2, probs = 0.95) #95th quantile
 
 ```
 
@@ -198,8 +192,8 @@ Min, Max, Mean, 5th & 95th percentile
 
 # PM 2.5
 dmc_pm25 <- 35 #micrograms/m3
-min_pm25 <- 2.205927 #5th quantile
-max_pm25 <- 16.60172 #95th quantile
+min_pm25 <- 0.968 #5th quantile
+max_pm25 <- 33.215 #95th quantile
 
 # VOC
 dmc_voc <- 750 #ppb
