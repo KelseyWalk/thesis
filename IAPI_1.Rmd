@@ -34,7 +34,8 @@ data2 <- bind_rows(living,kitchen) %>%
   summarise_each(funs(mean)) %>%
   mutate( date = date(datetime)) %>%
   group_by(id_home, date) %>%
-  filter(n() >= 22 ) #Only include days where at least 22hrs of monitoring existed
+  filter(n() >= 22 ) %>% #Only include days where at least 22hrs of monitoring existed
+  filter(!c(id_home == "029"| id_home == "030" | id_home == "031"| id_home == "032" | id_home == "033")) # homes 001 - 028
 
 ```
 
@@ -56,17 +57,18 @@ Min, Max, Mean, 5th & 95th percentile
 # PM 2.5
 dmc_pm25 <- 15 #micrograms/m3 
 min_pm25 <- 0.968 #5th quantile
-max_pm25 <- 33.215 #95th quantile
-
-# VOC
-dmc_voc <- 200 #micrograms/m3 = ppb
-min_voc <- 108.744 #5th
-max_voc <- 1233.404 #95th
+max_pm25 <- 33.461 #95th quantile
 
 # CO2
 dmc_co2 <- 1000 #ppm
-min_co2 <- 461.877 #5th
-max_co2 <- 1073.565#95th
+min_co2 <- 461.169 #5th
+max_co2 <- 1073.226#95th
+
+# VOC
+dmc_voc <- 200 #micrograms/m3 = ppb
+min_voc <- 107.442 #5th
+max_voc <- 1205.729 #95th
+
 
 ```
 

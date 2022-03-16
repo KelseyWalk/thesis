@@ -191,19 +191,28 @@ Min, Max, Mean, 5th & 95th percentile
 ##???? Should this be each point we have, or the daily average? I think it should be for daily average.
 
 # PM 2.5
-dmc_pm25 <- 35 #micrograms/m3
-min_pm25 <- 0.968 #5th quantile
-max_pm25 <- 33.215 #95th quantile
-
-# VOC
-dmc_voc <- 750 #ppb
-min_voc <- 183.5379 #5th
-max_voc <- 751.6328 #95th
+dmc_pm25 <- 15 #micrograms/m3
+min_pm25 <- quantile(data_daily$pm25, probs = 0.05) #5th quantile
+max_pm25 <- quantile(data_daily$pm25, probs = 0.95)#95th quantile
 
 # CO2
-dmc_co2 <- 1200 #ppm
-min_co2 <- 539.3771 #5th
-max_co2 <- 851.7108 #95th
+dmc_co2 <- 1000 #ppm
+min_co2 <- quantile(data_daily$co2, probs = 0.05) #5th
+max_co2 <- quantile(data_daily$co2, probs = 0.95) #95th
+
+# VOC
+dmc_voc <- 200 #micrograms/m3
+min_voc <- quantile(data_daily$voc, probs = 0.05) #5th
+max_voc <- quantile(data_daily$voc, probs = 0.95) #95th
+
+# T
+min_t <- quantile(data_daily$temp, probs = 0.05) #5th
+max_t <- quantile(data_daily$temp, probs = 0.95) #95th
+
+#RH
+min_h <- quantile(data_daily$humid, probs = 0.05) #5th
+max_h <- quantile(data_daily$humid, probs = 0.95) #95th
+
 
 ```
 
