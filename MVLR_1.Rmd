@@ -5,26 +5,67 @@ date: "3/12/2022"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+# Librarys
+```{r include = FALSE}
+library("dplyr")
+library("tidyverse")
+library("ggplot2")
+library("nlme")
+
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+# Read in Data
+```{r}
+data_all <- readRDS("~kelseywalker/Desktop/EPIC HOMES/R_thesis/heat_map/model_data.rds") %>%
+  rename(cooking = "Cooking_(min)")
+ 
 ```
 
-## Including Plots
+# Fixed Effects Linear Regression Model (lm)
+```{r}
 
-You can also embed plots, for example:
+#IEI ~ smoking + energy_star + months_occupied + percent_home_SS + percent_home_MF + occupants + rental + median_income + market_value + cook_fuel + floors + est_vol + conditioned_area + ACH50 + year_built + cooking + pm25_out + T_out + RH_out
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+fm1 <- lm(IEI ~ cooking + pm25_out + year_built + ACH50 + floors + cook_fuel + median_income + rental + occupants + percent_home_SS + months_occupied + energy_star + smoking, data_all)
+fm1_e <- summary(fm1)$coef[,"Estimate", drop = F] # Create an array of the Estimate column
+fm1_p <- summary(fm1)$coef[,"Pr(>|t|)", drop = F] 
+fm1_sd <-summary(fm1)$coef[,"Std. Error", drop = F]  
+IEI_lm <- cbind(fm1_e, fm1_p, fm1_sd) #combine arrays
+summary(fm1)
+
+
+fm2 <- lm(IAPI ~  cooking + pm25_out + T_out + RH_out + year_built + ACH50 + floors + median_income + occupants + percent_home_MF + percent_home_SS + months_occupied + energy_star + smoking,data_all )
+fm2_e <- summary(fm2)$coef[,"Estimate", drop = F] 
+fm2_p <- summary(fm2)$coef[,"Pr(>|t|)", drop = F] 
+fm2_sd <-summary(fm2)$coef[,"Std. Error", drop = F]  
+IAPI_lm <- cbind(fm2_e, fm2_p, fm2_sd)
+#summary(fm2)
+
+fm3 <- lm(IDI ~ cooking + T_out + ACH50 + floors + cook_fuel + median_income + rental + occupants + percent_home_MF + percent_home_SS + smoking, data_all)
+fm3_e <- summary(fm3)$coef[,"Estimate", drop = F] 
+fm3_p <- summary(fm3)$coef[,"Pr(>|t|)", drop = F] 
+fm3_sd <-summary(fm3)$coef[,"Std. Error", drop = F]  
+IDI_lm <- cbind(fm3_e, fm3_p, fm3_sd)
+#summary(fm3)
+
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+
+# Mixed Effects Linear Regression Model (lme)
+```{r}
+data4 <- data_all %>%
+  ungroup() %>%
+  group_by(id_home)
+
+fm3 <- lme(IEI ~ smoking, random = ~ id_home | year_built,  data = data_all)
+
+
+```
+
+
+
+

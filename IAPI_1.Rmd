@@ -14,6 +14,8 @@ library("ggplot2")
 library("fitdistrplus")
 library("fmsb") #for radar/spider chart
 library("data.table")
+library("hrbrthemes")
+library("viridis")
 ```
 
 # Read in data
@@ -158,15 +160,45 @@ IAPI <- dplyr::select(results, id_home,date, IAPI)
 #write_csv(results, "IAPI_1.csv")
 ```
 
-# Time Series
+#Facet
 ```{r}
-home1 <- filter(results, id_home == "001")
+ggplot(data = IAPI, aes(date, IAPI)) + 
+  geom_point(size = 0.3) +
+  facet_wrap(~id_home) +
+  scale_x_date(date_labels = "%b %y") +
+  theme(axis.text.x = element_text(angle = 45, hjust =1))
 
-ggplot(data = home1, aes(date, IAPI)) + 
-  geom_point() +
-  geom_point(aes(date, pm25_percent, color = "pm25")) + 
-  geom_point(aes(date, co2_percent, color = "co2")) +
-  geom_point(aes(date, voc_percent, color = "voc"))
+```
+
+# Time Series for Each Home
+```{r}
+home3 <- filter(index, id_home == "002" | id_home == "006" | id_home == "013")
+
+ggplot(data = home3, aes(x = date)) + 
+   geom_point(shape = 3, size = 1, aes(date, pm25_level1, color = "red")) + 
+  geom_point(shape = 4, size = 1, aes(date, co2_level1, color = "purple")) + 
+  geom_point(shape = 1, size = 1, aes(date, voc_level1, color = "darkgreen")) + 
+   geom_point(aes(date, IAPI, color = "black"),shape = 16, size = 1.5) +
+    theme(legend.title = element_blank(), legend.position = "bottom") +
+  ggtitle("Indoor Air Pollution Index")  + 
+  facet_grid(rows = vars(id_home)) + 
+  scale_x_date(date_labels = "%b %Y") +
+  scale_color_identity(
+    breaks = c("black", "red", "purple", "darkgreen"),
+    labels = c("IDI", "PM2.5", "CO2", "TVOC"),
+    guide = "legend")  +
+  labs(y = "IAPI")
+
+
+home3 <- filter(results, id_home == "003")
+
+ggplot(data = home3, aes(x = date)) + 
+  geom_line(aes(y = IAPI, colour = "IAPI")) +
+  geom_point(aes(y = pm25_level1, colour = "pm25")) + 
+  geom_point(aes(y = co2_level1, colour = "co2")) + 
+  geom_point(aes(y = voc_level1, colour = "voc")) + 
+  ggtitle("IAPI: Home 003") +
+  labs(colour = "Indoor Air Pollution") # Title Legend
 
 #ggsave(filename = "IAPI_001_point_2.jpg", plot = p1)
 ```
@@ -187,3 +219,22 @@ data_radar <- results[1,] %>%
 radarchart(data_radar)
 #```
 
+# Box Plot for homes
+```{r}
+sample_size = results %>%
+  group_by(id_home) %>%
+  summarize(num = n())
+
+box_plot <- merge(results, sample_size, by = "id_home") %>%
+  mutate(myaxis = paste0(id_home, "\n", num ))
+
+
+ggplot(box_plot, aes(x=myaxis , y = IAPI)) +
+  geom_boxplot()+
+  ggtitle("IAPI Boxplots") + 
+  labs(x = "House ID", "\n", "sample size") +
+  theme(axis.text.x = element_text(angle = 0, hjust =1))
+  
+ 
+
+```

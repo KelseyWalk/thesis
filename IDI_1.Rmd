@@ -65,3 +65,57 @@ index <- inputs %>%
 IDI <- dplyr::select(index, id_home, date, IDI)
 #write_rds(IDI, "IDI.rds")
 ```
+
+# Boxplots
+```{r}
+sample_size = index %>%
+  group_by(id_home) %>%
+  summarize(num = n())
+
+box_plot <- merge(index, sample_size, by = "id_home") %>%
+  mutate(myaxis = paste0(id_home, "\n", num ))
+
+
+ggplot(box_plot, aes(x=myaxis , y = IDI)) +
+  geom_boxplot()+
+  ggtitle("IDI Boxplots") + 
+  labs(x = "House ID", "\n", "sample size") +
+  theme(axis.text.x = element_text(angle = 0, hjust =1))
+  
+
+
+```
+
+# Facet
+
+
+```{r}
+
+ggplot(data = IDI, aes(date, IDI)) + 
+  geom_point(size = 0.3) +
+  facet_wrap(~id_home) +
+  scale_x_date(date_labels = "%b %y") +
+  theme(axis.text.x = element_text(angle = 45, hjust =1))
+
+```
+
+
+# Home examples over time
+```{r}
+home3 <- filter(index, id_home == "002" | id_home == "006" | id_home == "013")
+
+ggplot(data = home3, aes(x = date)) + 
+   geom_point(shape = 3, size = 1, aes(date, temp_level1, color = "red")) + 
+  geom_point(shape = 4, size = 1, aes(date, humid_level1, color = "purple", shape = 4)) + 
+   geom_point(aes(date, IDI, color = "black"),shape = 16, size = 1.5) +
+    theme(legend.title = element_blank(), legend.position = "bottom") +
+  ggtitle("Indoor Discomfort Index")  + 
+  facet_grid(rows = vars(id_home)) + 
+  scale_x_date(date_labels = "%b %Y") +
+  scale_color_identity(
+    breaks = c("black", "red", "purple"),
+    labels = c("IDI", "T", "RH"),
+    guide = "legend")  +
+  labs(y = "IDI")
+
+```
